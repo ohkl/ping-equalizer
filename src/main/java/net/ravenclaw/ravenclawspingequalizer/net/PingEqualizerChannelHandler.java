@@ -101,11 +101,6 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
             return;
         }
 
-        if (shouldBypassGameplay(packet)) {
-            super.write(ctx, msg, promise);
-            return;
-        }
-
         if (packet instanceof ServerboundPingRequestPacket qp) {
             PingEqualizerState.getInstance().onPingSent(qp.getTime());
         }
@@ -228,11 +223,6 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
             return;
         }
 
-        if (shouldBypassGameplay(packet)) {
-            super.channelRead(ctx, msg);
-            return;
-        }
-
         PingEqualizerState state = PingEqualizerState.getInstance();
         if (state.getMode() == PingEqualizerState.Mode.OFF && inboundQueue.isEmpty()) {
             if (packet instanceof ClientboundPongResponsePacket pingResult) {
@@ -327,44 +317,6 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
 
     private boolean shouldBypassPacket(Packet<?> packet) {
         return packet.isTerminal();
-    }
-
-    /**
-     * Combat and locomotion packets are never delayed by default: the server validates hits
-     * against its own copy of both players' positions, so delaying those packets makes every
-     * hit land "out of range" even though the client already played the hit feedback.
-     *
-     * <p>Matched by class name instead of by type: 26.x ships unobfuscated, so the runtime names
-     * are the real ones, and this keeps the list working when Mojang renames or moves a class
-     * between point releases (a stale entry simply never matches).</p>
-     */
-    private static final String[] GAMEPLAY_PACKETS = {
-            "ServerboundMovePlayerPacket",
-            "ServerboundMoveVehiclePacket",
-            "ServerboundPlayerCommandPacket",
-            "ServerboundPlayerInputPacket",
-            "ServerboundInteractPacket",
-            "ServerboundSwingPacket",
-            "ServerboundUseItemPacket",
-            "ServerboundUseItemOnPacket",
-            "ServerboundPlayerActionPacket",
-            "ClientboundMoveEntityPacket",
-            "ClientboundEntityPositionSyncPacket",
-            "ClientboundTeleportEntityPacket",
-            "ClientboundSetEntityMotionPacket"
-    };
-
-    private boolean shouldBypassGameplay(Packet<?> packet) {
-        if (!PingEqualizerState.getInstance().isGameplayBypassEnabled()) {
-            return false;
-        }
-        String name = packet.getClass().getName();
-        for (String candidate : GAMEPLAY_PACKETS) {
-            if (name.contains(candidate)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static void spinWait(long nanos) {

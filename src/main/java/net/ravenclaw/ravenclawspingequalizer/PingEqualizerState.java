@@ -31,7 +31,6 @@ public class PingEqualizerState {
     private int addAmount = 0;
     private int totalTarget = 0;
     private boolean serverEnabled = true;
-    private boolean gameplayBypass = true;
 
     private long currentDelayMs = 0;
     private double preciseDelay = 0;
@@ -418,14 +417,6 @@ public class PingEqualizerState {
 
     public boolean isServerEnabled() {
         return serverEnabled;
-    }
-
-    public boolean isGameplayBypassEnabled() {
-        return gameplayBypass;
-    }
-
-    public void setGameplayBypassEnabled(boolean enabled) {
-        gameplayBypass = enabled;
     }
 
     public boolean isAddingDelay(int amount) {
