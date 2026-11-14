@@ -9,8 +9,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
 import net.minecraft.network.packet.c2s.query.QueryPingC2SPacket;
 import net.minecraft.network.packet.s2c.common.KeepAliveS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.query.PingResultS2CPacket;
 import net.ravenclaw.ravenclawspingequalizer.PingEqualizerState;
 
@@ -78,6 +89,11 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
 
         if (shouldBypassPacket(packet)) {
             queueOutbound(ctx, msg, promise, 0);
+            return;
+        }
+
+        if (shouldBypassGameplay(packet)) {
+            super.write(ctx, msg, promise);
             return;
         }
 
@@ -188,6 +204,11 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
             return;
         }
 
+        if (shouldBypassGameplay(packet)) {
+            super.channelRead(ctx, msg);
+            return;
+        }
+
         PingEqualizerState state = PingEqualizerState.getInstance();
         if (state.getMode() == PingEqualizerState.Mode.OFF && inboundQueue.isEmpty()) {
             if (packet instanceof PingResultS2CPacket pingResult) {
@@ -275,6 +296,28 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
 
     private boolean shouldBypassPacket(Packet<?> packet) {
         return packet.transitionsNetworkState();
+    }
+
+    /**
+     * Combat and locomotion packets are never delayed by default: the server validates hits
+     * against its own copy of both players' positions, so delaying those packets makes every
+     * hit land "out of range" even though the client already played the hit feedback.
+     */
+    private boolean shouldBypassGameplay(Packet<?> packet) {
+        if (!PingEqualizerState.getInstance().isGameplayBypassEnabled()) {
+            return false;
+        }
+        return packet instanceof PlayerInteractEntityC2SPacket
+                || packet instanceof HandSwingC2SPacket
+                || packet instanceof PlayerInteractItemC2SPacket
+                || packet instanceof PlayerInteractBlockC2SPacket
+                || packet instanceof PlayerActionC2SPacket
+                || packet instanceof PlayerMoveC2SPacket
+                || packet instanceof VehicleMoveC2SPacket
+                || packet instanceof ClientCommandC2SPacket
+                || packet instanceof EntityS2CPacket
+                || packet instanceof EntityPositionS2CPacket
+                || packet instanceof EntityVelocityUpdateS2CPacket;
     }
 
     private static void spinWait(long nanos) {
