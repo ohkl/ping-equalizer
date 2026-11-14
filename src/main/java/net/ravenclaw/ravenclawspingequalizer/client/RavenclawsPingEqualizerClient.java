@@ -1,5 +1,6 @@
 package net.ravenclaw.ravenclawspingequalizer.client;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 
@@ -40,6 +41,9 @@ public class RavenclawsPingEqualizerClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(PingEqualizerStateQueryPayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 PingEqualizerState state = PingEqualizerState.getInstance();
+                if (!state.isRespondingToQueries()) {
+                    return;
+                }
                 ClientPlayNetworking.send(new PingEqualizerStateResponsePayload(
                         payload.requestId(),
                         state.isServerEnabled(),
@@ -134,6 +138,18 @@ public class RavenclawsPingEqualizerClient implements ClientModInitializer {
                                         }
                                         return 1;
                                     })
+                            )
+                            .then(ClientCommandManager.literal("respond")
+                                    .then(ClientCommandManager.argument("enabled", BoolArgumentType.bool())
+                                            .executes(ctx -> {
+                                                boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
+                                                PingEqualizerState.getInstance().setRespondingToQueries(enabled);
+                                                sendLocalMessage(enabled
+                                                        ? "\u00A7eState queries will be answered again; any server can fingerprint this client."
+                                                        : "State queries ignored: this client never sends a custom payload.");
+                                                return 1;
+                                            })
+                                    )
                             )
             );
 
