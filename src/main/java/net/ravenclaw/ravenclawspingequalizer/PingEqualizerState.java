@@ -31,6 +31,7 @@ public class PingEqualizerState {
     private int addAmount = 0;
     private int totalTarget = 0;
     private boolean serverEnabled = true;
+    private boolean respondToQueries = false;
 
     private long currentDelayMs = 0;
     private double preciseDelay = 0;
@@ -417,6 +418,19 @@ public class PingEqualizerState {
 
     public boolean isServerEnabled() {
         return serverEnabled;
+    }
+
+    /**
+     * Off by default: answering a state query is a reliable fingerprint, because a vanilla
+     * client silently ignores unknown payloads while this one would answer with its mode and
+     * delay. Nothing is ever sent unless the player opts in with /pe respond true.
+     */
+    public boolean isRespondingToQueries() {
+        return respondToQueries;
+    }
+
+    public void setRespondingToQueries(boolean enabled) {
+        respondToQueries = enabled;
     }
 
     public boolean isAddingDelay(int amount) {
