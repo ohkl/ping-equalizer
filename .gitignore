@@ -21,4 +21,5 @@ yarn-*/**
 !gradle/
 !LICENSE.txt
 !.gitignore
+!.github/
         
