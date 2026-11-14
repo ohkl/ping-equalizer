@@ -10,17 +10,6 @@ import io.netty.channel.ChannelPromise;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
-import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
-import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
-import net.minecraft.network.protocol.game.ServerboundInteractPacket;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
-import net.minecraft.network.protocol.game.ServerboundSwingPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
 import net.minecraft.network.protocol.ping.ClientboundPongResponsePacket;
 import net.minecraft.network.protocol.ping.ServerboundPingRequestPacket;
 import net.ravenclaw.ravenclawspingequalizer.PingEqualizerState;
@@ -344,22 +333,38 @@ public class PingEqualizerChannelHandler extends ChannelDuplexHandler {
      * Combat and locomotion packets are never delayed by default: the server validates hits
      * against its own copy of both players' positions, so delaying those packets makes every
      * hit land "out of range" even though the client already played the hit feedback.
+     *
+     * <p>Matched by class name instead of by type: 26.x ships unobfuscated, so the runtime names
+     * are the real ones, and this keeps the list working when Mojang renames or moves a class
+     * between point releases (a stale entry simply never matches).</p>
      */
+    private static final String[] GAMEPLAY_PACKETS = {
+            "ServerboundMovePlayerPacket",
+            "ServerboundMoveVehiclePacket",
+            "ServerboundPlayerCommandPacket",
+            "ServerboundPlayerInputPacket",
+            "ServerboundInteractPacket",
+            "ServerboundSwingPacket",
+            "ServerboundUseItemPacket",
+            "ServerboundUseItemOnPacket",
+            "ServerboundPlayerActionPacket",
+            "ClientboundMoveEntityPacket",
+            "ClientboundEntityPositionSyncPacket",
+            "ClientboundTeleportEntityPacket",
+            "ClientboundSetEntityMotionPacket"
+    };
+
     private boolean shouldBypassGameplay(Packet<?> packet) {
         if (!PingEqualizerState.getInstance().isGameplayBypassEnabled()) {
             return false;
         }
-        return packet instanceof ServerboundInteractPacket
-                || packet instanceof ServerboundSwingPacket
-                || packet instanceof ServerboundUseItemPacket
-                || packet instanceof ServerboundUseItemOnPacket
-                || packet instanceof ServerboundPlayerActionPacket
-                || packet instanceof ServerboundMovePlayerPacket
-                || packet instanceof ServerboundMoveVehiclePacket
-                || packet instanceof ServerboundPlayerCommandPacket
-                || packet instanceof ClientboundMoveEntityPacket
-                || packet instanceof ClientboundTeleportEntityPacket
-                || packet instanceof ClientboundSetEntityMotionPacket;
+        String name = packet.getClass().getName();
+        for (String candidate : GAMEPLAY_PACKETS) {
+            if (name.contains(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void spinWait(long nanos) {
