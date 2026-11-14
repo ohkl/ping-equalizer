@@ -139,8 +139,8 @@ public class RavenclawsPingEqualizerClient implements ClientModInitializer {
                                         return 1;
                                     })
                             )
-                            .then(ClientCommandManager.literal("respond")
-                                    .then(ClientCommandManager.argument("enabled", BoolArgumentType.bool())
+                            .then(ClientCommands.literal("respond")
+                                    .then(ClientCommands.argument("enabled", BoolArgumentType.bool())
                                             .executes(ctx -> {
                                                 boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
                                                 PingEqualizerState.getInstance().setRespondingToQueries(enabled);
