@@ -1,6 +1,5 @@
 package net.ravenclaw.ravenclawspingequalizer.client;
 
-import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 
@@ -135,18 +134,6 @@ public class RavenclawsPingEqualizerClient implements ClientModInitializer {
                                         }
                                         return 1;
                                     })
-                            )
-                            .then(ClientCommandManager.literal("bypass")
-                                    .then(ClientCommandManager.argument("enabled", BoolArgumentType.bool())
-                                            .executes(ctx -> {
-                                                boolean enabled = BoolArgumentType.getBool(ctx, "enabled");
-                                                PingEqualizerState.getInstance().setGameplayBypassEnabled(enabled);
-                                                sendLocalMessage(enabled
-                                                        ? "Gameplay bypass ON: movement and combat packets are no longer delayed."
-                                                        : "Gameplay bypass OFF: every packet is delayed again.");
-                                                return 1;
-                                            })
-                                    )
                             )
             );
 
